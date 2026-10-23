@@ -14,6 +14,7 @@ claude plugin marketplace add danielscherber/claudedaniel
 |--------|-------------|
 | `mittwald-mstudio` | Mittwald mStudio v2 — CLI, REST API, Docker Container, App Marketplace |
 | `moco` | MOCO Agentursoftware — API v1, Webhooks, n8n-Integration, MCP Server |
+| `code-warden` | KI-Entwicklungs-Governance — Scope/Plan Gates, Patch-First, Secrets-Scan, Anti-Drift (übernommen von [Kodaxadev/Code-Warden](https://github.com/Kodaxadev/Code-Warden), MIT) |
 
 ### Plugin installieren
 

@@ -4,18 +4,19 @@
     "name": "Daniel Scherber"
   },
   "metadata": {
-    "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, and more.",
-    "version": "1.4.0"
+    "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, Code-Warden, and more.",
+    "version": "1.5.0"
   },
   "plugins": [
     {
       "name": "claudedaniel",
-      "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, and more.",
+      "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, Code-Warden, and more.",
       "source": "./",
       "skills": [
         "./skills/mittwald-mstudio",
         "./skills/moco",
-        "./skills/sw-aiseo"
+        "./skills/sw-aiseo",
+        "./skills/code-warden"
       ]
     }
   ]
