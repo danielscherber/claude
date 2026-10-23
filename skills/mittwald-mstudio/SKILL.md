@@ -1,8 +1,9 @@
 ---
 name: mittwald-mstudio
 description: >
-  Deep knowledge of Mittwald mStudio v2 — CLI (mw), REST API, Docker container deployments,
-  and App Marketplace setups (n8n, WordPress, etc.). Use this skill whenever the user asks
+  Deep knowledge of Mittwald mStudio v2 — CLI (mw), REST API, Mittwald MCP server, Docker
+  container stacks and container templates (n8n, Directus, etc.), and App Marketplace setups
+  (WordPress, TYPO3, etc.). Use this skill whenever the user asks
   about anything on Mittwald / mStudio: setting up apps, deploying containers, automating
   via the API or CLI, configuring projects/spaces/organizations, debugging deployments, or
   writing shell/automation scripts that interact with mStudio. Also trigger for questions
@@ -21,14 +22,16 @@ This skill covers the Mittwald mStudio v2 platform. It focuses on:
 - **mw CLI** — authentication, project/app/container management
 - **REST API v2** — `https://api.mittwald.de/v2/` — for automation and scripting
 - **Docker container stacks** — deployment, volumes, env vars, ingress, logs
-- **App Marketplace** — n8n, WordPress, and other managed apps
+- **App Marketplace** — WordPress, TYPO3, Contao, Shopware and other managed apps
+- **Container templates** — 1-click stacks for n8n, Directus, PostgreSQL, Uptime Kuma, etc.
+- **Mittwald MCP server** — direct tool access from Claude, when connected
 - **Project & organization management** — IDs, context, resource scoping
 
 For detailed reference beyond what's in this file, read the appropriate reference file:
 - `references/cli.md` — CLI commands, flags, context
 - `references/api.md` — API concepts, authentication, key endpoints
-- `references/containers.md` — Docker stack setup, API payload patterns
-- `references/apps.md` — Marketplace apps, n8n, WordPress specifics
+- `references/containers.md` — Docker stack setup, container templates, API payload patterns
+- `references/apps.md` — Marketplace apps, WordPress specifics, system software
 
 ---
 
@@ -44,8 +47,8 @@ For detailed reference beyond what's in this file, read the appropriate referenc
 
 ### Search strategy
 
-1. **Use `web_fetch`** to retrieve specific documentation pages directly when you know the URL (e.g. a specific how-to or API endpoint page).
-2. **Use `web_search`** with queries like:
+1. **Use `WebFetch`** to retrieve specific documentation pages directly when you know the URL (e.g. a specific how-to or API endpoint page).
+2. **Use `WebSearch`** with queries like:
    - `site:developer.mittwald.de <topic>`
    - `site:github.com/mittwald <topic>`
    - `mittwald mStudio <topic> <year>` for recent issues or changelogs
@@ -69,6 +72,30 @@ https://github.com/mittwald/developer-portal
 https://github.com/mittwald/api-client-js
 https://github.com/mittwald/api-client-go
 ```
+
+**OpenAPI spec (always current, public):** `https://api.mittwald.de/v2/openapi.json` — the fastest way to verify an endpoint, payload schema or deprecation before answering.
+
+---
+
+## Mittwald MCP Server — Prefer When Connected
+
+If tools named `mittwald_*` are available in the session, use them for **actions** instead of CLI or raw API calls. They cover:
+
+| Area | Example tools |
+|---|---|
+| Projects, servers, orgs | `mittwald_project_list`, `mittwald_server_list`, `mittwald_org_membership_list` |
+| Apps | `mittwald_app_list`, `mittwald_app_upgrade`, `mittwald_app_versions` |
+| Containers & stacks | `mittwald_stack_deploy`, `mittwald_stack_ps`, `mittwald_container_logs`, `mittwald_container_restart` |
+| Databases | `mittwald_database_mysql_create`, `mittwald_database_mysql_dump`, `mittwald_database_redis_create` |
+| Domains & DNS | `mittwald_domain_dnszone_update`, `mittwald_domain_virtualhost_create`, `mittwald_certificate_request` |
+| Backups & cronjobs | `mittwald_backup_create`, `mittwald_backup_schedule_create`, `mittwald_cronjob_create` |
+| Mail | `mittwald_mail_address_create`, `mittwald_mail_deliverybox_create` |
+| Access | `mittwald_ssh_user_create`, `mittwald_user_api_token_create` |
+
+Rules:
+- Read first (`*_list`, `*_get`) to resolve IDs — never guess IDs.
+- Destructive tools (`*_delete`, `*_uninstall`, `stack_deploy` replacing services, `dnszone_update`) need explicit user confirmation.
+- If the MCP server is not connected, fall back to the `mw` CLI or the REST API below.
 
 ---
 
@@ -144,7 +171,16 @@ mw context get                        # show current context
 
 ## Docker Container Stacks
 
-Containers on Mittwald run as **container stacks** (analogous to docker-compose). Each project has a **default stack**.
+Containers on Mittwald run as **container stacks** (analogous to docker-compose). Each project has a **default stack**; additional stacks can be created via `POST /v2/projects/{projectId}/stacks`.
+
+### Container templates (check first!)
+
+Before writing a stack by hand, check whether a template exists:
+```
+GET /v2/container-templates?searchTerm=<name>
+GET /v2/container-templates/{templateId}     # required userInputs
+```
+Available templates include n8n, Directus, PostgreSQL, MariaDB, Uptime Kuma, Umami, Vaultwarden, Paperless, Open WebUI, Qdrant, Listmonk, Mailpit and more. See `references/containers.md`.
 
 ### API: Deploy/Update a container
 
@@ -152,7 +188,7 @@ Containers on Mittwald run as **container stacks** (analogous to docker-compose)
 PUT /v2/stacks/{stackId}
 ```
 
-**⚠️ Idempotent replace**: This replaces the entire stack. Always include all existing services when adding a new one. Use `PATCH /v2/stacks/{stackId}/` to update selectively.
+**⚠️ Idempotent replace**: This replaces the entire stack — omitted services are deleted. Always include all existing services when adding a new one. Use `PATCH /v2/stacks/{stackId}` to update selectively.
 
 Minimal payload:
 ```json
@@ -161,10 +197,13 @@ Minimal payload:
     "n8n": {
       "image": "n8nio/n8n:latest",
       "environment": {
-        "N8N_BASIC_AUTH_ACTIVE": "true",
-        "N8N_BASIC_AUTH_USER": "admin"
+        "N8N_HOST": "n8n.your-domain.de",
+        "N8N_PROTOCOL": "https",
+        "WEBHOOK_URL": "https://n8n.your-domain.de/"
       },
-      "volumes": ["n8n_data:/home/node/.n8n"]
+      "volumes": ["n8n_data:/home/node/.n8n"],
+      "ports": ["5678:5678/tcp"],
+      "restart": "unless-stopped"
     }
   },
   "volumes": {
@@ -184,17 +223,25 @@ For private registries: `POST /v2/projects/{projectId}/registries`
 ```
 POST /v2/stacks/{stackId}/services/{serviceId}/actions/start
 POST /v2/stacks/{stackId}/services/{serviceId}/actions/stop
+POST /v2/stacks/{stackId}/services/{serviceId}/actions/restart
+POST /v2/stacks/{stackId}/services/{serviceId}/actions/recreate
+POST /v2/stacks/{stackId}/services/{serviceId}/actions/pull        # pull latest image + recreate
 GET  /v2/stacks/{stackId}/services/{serviceId}/logs
+GET  /v2/stacks/{stackId}/services/{serviceId}/log-analysis        # AI log summary
 ```
 
+### Automatic updates & CI deploys
+- Image update schedule: `PATCH /v2/stacks/{stackId}` with `"x-update-schedule": { "cron": "0 4 * * 1", "timezone": "Europe/Berlin" }`
+- Deploy webhook for CI: `POST /v2/stacks/{stackId}/services/{serviceId}/webhook-token` → returns a one-time `webhookUrl`; store it as a CI secret, call it after pushing a new image.
+
 ### Connecting a domain to a container
-Use ingress: `POST /v2/ingresses/` — specify container as target.
+Use ingress: `POST /v2/ingresses` — target `{ "container": { "id": "<serviceId>", "portProtocol": "5678/tcp" } }`. The port must be exposed in the service's `ports`.
 
 ---
 
 ## App Marketplace (Managed Apps)
 
-Apps like WordPress, n8n, Matomo, etc. are managed via:
+Apps like WordPress, TYPO3, Matomo, Nextcloud, Shopware, plus generic Node.js / Python / PHP / Static Files runtimes, are managed via:
 ```
 POST /v2/projects/{projectId}/appinstallations
 GET  /v2/projects/{projectId}/appinstallations
@@ -210,10 +257,10 @@ mw app download                     # download files via SCP/rsync
 ```
 
 ### n8n on Mittwald
-n8n is typically deployed as a **container** (not a marketplace app). Recommended approach:
-- Use the Docker Hub image `n8nio/n8n`
-- Persist data with a named volume on `/home/node/.n8n`
-- Set `MITTWALD_API_TOKEN` as env var in the container stack if n8n needs to call the Mittwald API
+n8n is **not** a marketplace app. Recommended approach:
+- Use the **`n8n` container template** (`POST /v2/projects/{projectId}/stacks` with `templateConfig.templateId: "n8n"`, required inputs `HOST` and `SMTP_FROM`)
+- Manual alternative: Docker Hub image `n8nio/n8n`, named volume on `/home/node/.n8n`, port `5678`
+- Set `MITTWALD_API_TOKEN` as env var in the container stack if n8n needs to call the Mittwald API — never hard-code the token in workflow JSON
 
 ### WordPress on Mittwald
 WordPress is available as a **managed marketplace app**:
@@ -307,7 +354,9 @@ mw database list --output json       # → database IDs
 | PUT stack wipes services | PUT is a full replace — include ALL services in every PUT call; use PATCH for selective updates |
 | App install fails | Verify project has container/app feature enabled (Space-Server required for containers) |
 | API 403 | Token missing `api_write` role — regenerate with correct permissions |
-| Domain not routing to container | Check ingress definition — container port must match `targetPort` in ingress spec |
+| Domain not routing to container | Check ingress definition — `portProtocol` must match a port exposed in the service's `ports` |
+| Image `:latest` never updates | Use `actions/pull`, an `x-update-schedule` or the deploy webhook |
+| Unsure whether an endpoint/field still exists | Check `https://api.mittwald.de/v2/openapi.json` — deprecated fields are marked there |
 
 ---
 
@@ -317,5 +366,5 @@ Load these when you need deeper detail:
 
 - `references/cli.md` — Full CLI command reference, flags, context system
 - `references/api.md` — API authentication, pagination, error codes, key endpoint list
-- `references/containers.md` — Full container stack spec (networking, health checks, resource limits)
-- `references/apps.md` — Marketplace app IDs, WordPress/n8n specifics, system software versioning
+- `references/containers.md` — Full container stack spec, container templates, ingress, update schedules, deploy webhooks
+- `references/apps.md` — Marketplace apps, WordPress specifics, system software versioning

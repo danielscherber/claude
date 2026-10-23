@@ -7,11 +7,10 @@ description: Use when optimizing German-language content to be cited by AI platf
 
 KI-SEO unterscheidet sich von klassischem SEO in einem zentralen Punkt: **Nicht Ranking ist das Ziel, sondern Zitierung.** Eine gut strukturierte Seite kann von ChatGPT oder Perplexity zitiert werden, auch wenn sie auf Seite 2 rankt. KI-Systeme wählen Quellen nach Inhaltsqualität, Struktur und Vertrauen — nicht nach Rankingposition.
 
-**Kritische Kennzahlen:**
-- KI-Overviews erscheinen in ~45 % aller Google-Suchen
-- Optimierte Inhalte werden 3× häufiger zitiert als nicht-optimierte
-- Statistiken und Quellenangaben steigern die KI-Sichtbarkeit um +40 %
-- Keyword-Stuffing reduziert KI-Sichtbarkeit um −10 % (Princeton GEO-Studie, KDD 2024)
+**Kritische Kennzahlen** (Branchenwerte 2024/25 — Größenordnung, keine Garantie; vor Weitergabe an Kunden aktuelle Zahlen recherchieren):
+- KI-Overviews erscheinen in einem großen Teil der Google-Suchen (Schätzungen 2025: ~45 %, stark abhängig von Branche und Suchintention)
+- Optimierte Inhalte werden deutlich häufiger zitiert als nicht-optimierte (Branchenschätzung: ~3×)
+- Statistiken und Quellenangaben steigern die KI-Sichtbarkeit um bis zu +40 %, Keyword-Stuffing senkt sie um ~−10 % (Aggarwal et al., „GEO: Generative Engine Optimization“, KDD 2024 — Laborwerte, nicht 1:1 übertragbar)
 
 ---
 
@@ -73,7 +72,7 @@ Mindestens eine Vergleichstabelle pro Leistungsseite — KI extrahiert diese bev
 
 KI-Plattformen bevorzugen Quellen mit nachweisbarer Expertise. Vertrauen entsteht durch konkrete Daten, echte Erfahrungen und transparente Autorenschaft.
 
-**Messbarer Effekt (Princeton GEO-Studie, KDD 2024):**
+**Messbarer Effekt (Princeton GEO-Studie, KDD 2024 — Laborwerte aus generativen Suchsimulationen):**
 
 | Maßnahme | Sichtbarkeitsgewinn |
 |---|---|
@@ -121,9 +120,9 @@ Undatierte Inhalte verlieren gegen datierte. Pflicht auf jeder Seite:
 
 ## Säule 3: Presence — Dort sein, wo KI sucht
 
-Brands sind **6,5× häufiger** über Drittquellen zitiert als über die eigene Domain. Die eigene Website ist nur ein Teil der Gleichung.
+Marken werden über Drittquellen ein Vielfaches häufiger zitiert als über die eigene Domain (Branchenanalysen 2025: ~6,5×). Die eigene Website ist nur ein Teil der Gleichung.
 
-**Zitierungsquellen nach Anteil (ChatGPT):**
+**Zitierungsquellen nach Anteil (ChatGPT, Analysen 2025 — schwankt stark über Zeit und Plattform):**
 - Wikipedia: 7,8 %
 - Reddit: 1,8 %
 - Branchenpublikationen, Verzeichnisse, YouTube: Rest
@@ -172,7 +171,9 @@ JSON-LD → Seiten-Settings → Custom Code → Head
 
 **Wichtig:** JSON-LD im `<head>`, nicht als HTML-Attribute.
 
-Fertige Templates → Siehe `KI-SEO-Leitfaden-stillworks.docx` (Teil 2)
+Fertige Templates → `references/schema-templates.md`
+
+**Wenn der Webflow MCP Server verbunden ist:** Seiten, CMS-Felder und Custom Code direkt per Webflow-Tools prüfen und setzen (z.B. `data_pages_tool`, `data_scripts_tool`, `data_cms_tool`). Änderungen erst nach Bestätigung durch den User veröffentlichen.
 
 ---
 
@@ -180,26 +181,49 @@ Fertige Templates → Siehe `KI-SEO-Leitfaden-stillworks.docx` (Teil 2)
 
 Blockierte Bots = keine Zitierung auf der jeweiligen Plattform.
 
+Die großen Anbieter trennen inzwischen zwischen **Such-/Abruf-Bots** (entscheidend für Zitierungen) und **Trainings-Bots** (optional):
+
+| Anbieter | Suche / Live-Abruf (erlauben!) | Training (Geschmackssache) |
+|---|---|---|
+| OpenAI | `OAI-SearchBot`, `ChatGPT-User` | `GPTBot` |
+| Anthropic | `Claude-SearchBot`, `Claude-User` | `ClaudeBot` |
+| Perplexity | `PerplexityBot`, `Perplexity-User` | — |
+| Google | `Googlebot` (AI Overviews / AI Mode laufen darüber) | `Google-Extended` (Gemini-Training/Grounding) |
+| Microsoft | `Bingbot` (Copilot nutzt den Bing-Index) | — |
+| Apple | `Applebot` | `Applebot-Extended` |
+| Common Crawl | — | `CCBot` |
+
 ```
-User-agent: GPTBot
-Allow: /
-
+# Such- und Abruf-Bots: für KI-Zitierungen zwingend erlauben
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
 User-agent: PerplexityBot
+User-agent: Perplexity-User
 Allow: /
 
+# Trainings-Bots: erlauben erhöht die Chance, im Modellwissen vorzukommen
+User-agent: GPTBot
 User-agent: ClaudeBot
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
 User-agent: Google-Extended
+User-agent: Applebot-Extended
 Allow: /
 
-# Trainings-Crawler ohne Suchbezug blockieren
+# Reiner Trainings-Crawler ohne Suchbezug — optional blockieren
 User-agent: CCBot
 Disallow: /
 ```
+
+Wichtig:
+- `Google-Extended` blockieren entfernt Inhalte **nicht** aus AI Overviews — die nutzen den normalen `Googlebot`.
+- `anthropic-ai` ist ein veralteter User-Agent und kann entfallen.
+- Bot-Namen ändern sich: vor einem Audit die aktuellen Crawler-Dokus der Anbieter prüfen.
+- Zusätzlich Firewall/CDN prüfen (z.B. Cloudflare „AI Crawl Control“ / Bot-Schutz) — blockiert oft unbemerkt trotz robots.txt.
+
+### llms.txt (optional)
+
+Eine `/llms.txt` im Root fasst die wichtigsten Seiten als Markdown-Linkliste für LLMs zusammen. Kein Standard, den die großen Plattformen offiziell auswerten — geringer Aufwand, aber kein Ersatz für die Maßnahmen oben.
 
 ---
 
@@ -228,11 +252,17 @@ Top-20-Anfragen manuell testen:
 | Schema-Markup implementiert? | |
 | Autor mit Name + Datum sichtbar? | |
 | Zuletzt aktualisiert innerhalb 6 Monate? | |
-| KI-Bots in robots.txt erlaubt? | |
+| Such-Bots (OAI-SearchBot, Claude-SearchBot, PerplexityBot …) in robots.txt und Firewall erlaubt? | |
 
 ---
 
-## Monitoring-Tools (optional)
+## Monitoring
+
+### KI-Referrer in Matomo
+
+Wenn der Matomo MCP Server verbunden ist, Besuche aus KI-Plattformen direkt auswerten (`Referrers.getWebsites` bzw. `Referrers.getAll`), gefiltert auf Referrer wie `chatgpt.com`, `perplexity.ai`, `gemini.google.com`, `copilot.microsoft.com`, `claude.ai`. Entwicklung im Monatsvergleich ist der beste eigene Indikator, ob Zitierungen Traffic bringen.
+
+### Externe Tools (optional)
 
 | Tool | Was es misst |
 |---|---|

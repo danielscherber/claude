@@ -28,14 +28,16 @@ Für tiefere Details lade die passende Referenzdatei:
 
 | Source | Was zu finden |
 |---|---|
-| `https://everii-group.github.io/mocoapp-api-docs/` | Offizielle API-Dokumentation |
-| `https://github.com/everii-group/mocoapp-api-docs` | API-Docs Repo — Issues enthalten Workarounds |
+| `https://docs.mocoapp.com/api/docs/v1` | **Maßgebliche** API-Referenz (OpenAPI, interaktiv) |
+| `https://docs.mocoapp.com/api/docs/v1.yaml` | OpenAPI-Spec als YAML — schnellster Weg, Endpunkte, Pflichtfelder und Enums zu prüfen |
+| `https://everii-group.github.io/mocoapp-api-docs/` | Ältere API-Doku — laut MOCO teilweise veraltet, gut für Konzepte (Auth, Pagination, Webhook-Signatur) |
 | `https://www.mocoapp.com/agentursoftware/funktionen/inhaltsverzeichnis` | Feature-Dokumentation |
 
 ### Search strategy
 
-1. **Use `web_fetch`** für bekannte Doku-URLs
-2. **Use `web_search`** mit:
+1. **OpenAPI-Spec prüfen** (`v1.yaml`), bevor du Endpunkte, Pflichtfelder oder Webhook-Targets nennst
+2. **Use `WebFetch`** für bekannte Doku-URLs
+3. **Use `WebSearch`** mit:
    - `site:everii-group.github.io/mocoapp-api-docs <topic>`
    - `mocoapp API <topic>`
    - `moco n8n integration <topic>`
@@ -204,7 +206,28 @@ PUT    /offers/{id}/update_status
 GET    /purchases               — Liste
 POST   /purchases               — Erstellen (required: date, currency, payment_method, items)
 POST   /purchases/{id}/assign_to_project
+GET    /planned_purchases       — Geplante Ausgaben (required beim Erstellen: date, title, net_total, currency, user_id)
 ```
+
+### Approvals (Freigaben)
+```
+GET    /approvals               — Liste (Filter: type, approver_user_id, creator_user_id, approval_status)
+POST   /approvals               — Anlegen (required: target_type, target_id, approver_id)
+POST   /approvals/{id}/approve
+POST   /approvals/{id}/deny     — optional: note
+```
+
+### Weitere neuere Endpunkte
+```
+GET/POST /offer_confirmations           — Auftragsbestätigungen (required: offer_id), PDF via /offer_confirmations/{id}.pdf
+GET/POST /offers/{offer_id}/attachments — Angebotsanhänge
+GET/POST /users/absence_requests        — Abwesenheitsanträge (required: approver_user_id, type, entries)
+GET      /revenue_categories            — Erlöskategorien
+GET      /todos                         — Todos (read-only in der REST API)
+GET      /profile/performance_report    — Soll-Ist des aktuellen Users
+```
+
+**Updates:** Die meisten Ressourcen unterstützen neben `PUT` auch `PATCH` für Teil-Updates.
 
 → Vollständige Referenz aller Endpunkte: siehe `references/api.md`
 
@@ -224,16 +247,17 @@ POST /api/v1/account/web_hooks
 
 ### Targets & Events
 
-| Target | Events |
-|--------|--------|
-| Activity | create, update, delete |
-| Company | create, update, delete |
-| Contact | create, update, delete |
-| Project | create, update, delete |
-| Invoice | create, update, delete |
-| Offer | create, update, delete |
-| Deal | create, update, delete |
-| Expense | create, update, delete |
+Events: `create`, `update`, `delete` (für jedes Target).
+
+Targets (laut OpenAPI-Spec):
+
+| Bereich | Targets |
+|---------|---------|
+| Zeit & Personal | `Activity`, `Presence`, `Schedule`, `User`, `User::HolidayRequest`, `User::AbsenceRequest`, `User::PeriodLockOverride`, `User::WorkTimeAdjustment` |
+| Projekte | `Project`, `ProjectGroup`, `Task`, `Contract`, `Expense`, `RecurringExpense`, `Project::PaymentSchedule`, `PlanningEntry` |
+| CRM | `Company`, `Contact`, `Deal`, `Comment` |
+| Angebote & Rechnungen | `Offer`, `Invoice`, `InvoiceDraft`, `InvoiceReminder`, `Invoice::Approval`, `Invoice::Payment`, `Invoice::BookkeepingExport` |
+| Ausgaben | `Purchase`, `Purchase::Draft`, `Purchase::Order`, `Purchase::Approval`, `Purchase::Payment`, `Purchase::BookkeepingExport` |
 
 ### Webhook-Headers
 - `X-Moco-Target` — z.B. "Activity"
@@ -244,7 +268,8 @@ POST /api/v1/account/web_hooks
 - `X-Moco-Account-Url` — Account-URL
 
 ### Wichtig
-- Muss innerhalb 10 Sekunden mit 2XX antworten
+- Muss innerhalb 10 Sekunden mit 2XX antworten — sonst Retry; schwere Verarbeitung in eine Queue auslagern
+- Zustellung ist **nicht** in Reihenfolge garantiert → `X-Moco-Timestamp` beachten
 - Nach 500 aufeinanderfolgenden Fehlern wird der Webhook **automatisch deaktiviert**
 - Signaturprüfung via HMAC SHA256
 
@@ -323,25 +348,42 @@ Für große Datenmengen den **Loop Over Items** Node nutzen:
 
 ## MCP Server
 
-MOCO bietet einen offiziellen MCP Server an, der in Claude Code / Claude Desktop verwendet werden kann. Damit können MOCO-Daten direkt aus Claude heraus abgefragt und bearbeitet werden.
+MOCO bietet einen offiziellen MCP Server an, der in Claude Code / Claude Desktop / claude.ai verwendet werden kann. Damit können MOCO-Daten direkt aus Claude heraus abgefragt und bearbeitet werden.
 
-### Verfügbare MCP Tools (Beispiele)
+**Wenn MOCO-MCP-Tools in der Session verfügbar sind, nutze sie bevorzugt** statt direkter API-Calls. Für Bereiche ohne MCP-Tool (z.B. Webhooks, Rechnungen erstellen, Approvals) fällt man auf die REST API zurück.
 
-Die MOCO MCP Tools folgen dem Muster der API-Endpunkte:
-- `find_activities` — Zeiteinträge suchen
-- `create_activity` — Zeiteintrag erstellen
-- `find_projects` — Projekte suchen/filtern
-- `find_companies` — Firmen suchen
-- `find_invoices` — Rechnungen suchen
-- `create_presence` / `touch_presence` — Arbeitszeiten stempeln
-- `list_users` — Benutzer auflisten
-- `find_presences` — Arbeitszeiten abfragen
+### Verfügbare MCP Tools
+
+| Bereich | Tools |
+|---------|-------|
+| Profil & Personal | `get_profile`, `list_users`, `find_my_employments`, `find_user_employments` |
+| Zeiterfassung | `find_activities`, `find_global_activities`, `find_activity_suggestions`, `create_activity` |
+| Arbeitszeiten | `find_presences`, `find_global_presences`, `create_presence`, `touch_presence` |
+| Projekte | `find_projects`, `get_project`, `create_project`, `update_project`, `find_contracted_projects`, `find_project_tasks`, `find_project_payment_schedules` |
+| Zusatzleistungen | `find_project_expenses`, `get_project_expense`, `create_project_expense`, `update_project_expense` |
+| Auswertung | `project_profitability_report`, `calculate_sum`, `calculate_date_range` |
+| Firmen & Kontakte | `find_companies`, `get_company`, `create_company`, `update_company`, `find_contacts`, `create_contact`, `update_contact` |
+| Leads & Angebote | `find_leads`, `create_lead`, `update_lead`, `find_offers`, `get_offer`, `create_offer`, `update_offer`, `find_services_catalog` |
+| Rechnungen | `find_invoices` (lesend) |
+| Ausgaben | `find_purchases`, `get_purchase`, `create_purchase`, `update_purchase`, `find_purchase_inbox`, `find_purchase_budgets`, `find_vat_codes` |
+| Planung | `find_planning_entries`, `create_planning_entry`, `update_planning_entry` |
+| Todos & Notizen | `find_todos`, `create_todo`, `find_comments`, `create_comment`, `update_comment`, `create_user_notification` |
+| Sonstiges | `find_custom_properties`, `create_file_upload` |
+
+Regeln:
+- IDs immer erst per `find_*` / `get_*` auflösen, nie raten.
+- Schreibende Tools (`create_*`, `update_*`) nur nach Bestätigung durch den User — sie wirken direkt im Live-Account.
+- Für Summen (Stunden, Beträge) `calculate_sum` nutzen statt selbst zu rechnen.
 
 ### Einrichtung
 
-Der MCP Server wird über die Claude Desktop Config oder Claude Code Settings eingebunden. Die Konfiguration benötigt:
+Der MCP Server wird als Connector (claude.ai) oder über die Claude Desktop / Claude Code Settings eingebunden. Die Konfiguration benötigt:
 - MOCO Domain (Subdomain)
-- API Token
+- API Token (niemals in Repos oder geteilte Configs committen)
+
+### Zusammenspiel mit dem n8n MCP Server
+
+Ist zusätzlich der n8n MCP Server verbunden (`search_nodes`, `create_workflow_from_code`, …), können MOCO-Workflows direkt in n8n angelegt und validiert werden, statt sie nur zu beschreiben. Den MOCO API Key dabei als n8n Credential hinterlegen — nie im Workflow-Code.
 
 ---
 
@@ -373,6 +415,7 @@ Der MCP Server wird über die Claude Desktop Config oder Claude Code Settings ei
 | 422 Unprocessable Entity | Pflichtfelder fehlen oder ungültige Werte — Response-Body enthält Details |
 | 429 Too Many Requests | Rate Limit erreicht — Wait/Delay einbauen |
 | Webhook deaktiviert | Nach 500 Fehlern auto-disabled → `PUT .../enable` |
+| Endpunkt/Feld unklar | OpenAPI-Spec `https://docs.mocoapp.com/api/docs/v1.yaml` prüfen |
 | Pagination unvollständig | `X-Total` Header prüfen und alle Seiten abrufen |
 | Zeiteintrag lässt sich nicht löschen | Bereits abgerechnet oder gesperrt |
 | Projekt lässt sich nicht löschen | Hat noch Zeiteinträge, Rechnungen oder Angebote |

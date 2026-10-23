@@ -2,25 +2,24 @@
 
 Claude Code Plugin Marketplace von Daniel Scherber.
 
+> Dieses Repository ist öffentlich. Skills enthalten nur Platzhalter — keine API-Keys, Tokens, IDs oder Kundendaten.
+
 ## Installation
 
 ```bash
-claude plugin marketplace add danielscherber/claudedaniel
+claude plugin marketplace add danielscherber/claude
+claude plugin install claudedaniel@claudedaniel
 ```
 
-## Enthaltene Plugins
+## Enthaltene Skills
 
-| Plugin | Beschreibung |
+Das Plugin `claudedaniel` bündelt folgende Skills:
+
+| Skill | Beschreibung |
 |--------|-------------|
-| `mittwald-mstudio` | Mittwald mStudio v2 — CLI, REST API, Docker Container, App Marketplace |
-| `moco` | MOCO Agentursoftware — API v1, Webhooks, n8n-Integration, MCP Server |
-
-### Plugin installieren
-
-```bash
-claude plugin install mittwald-mstudio@claudedaniel
-claude plugin install moco@claudedaniel
-```
+| `mittwald-mstudio` | Mittwald mStudio v2 — CLI, REST API, Mittwald MCP, Container-Stacks & -Templates, App Marketplace |
+| `moco` | MOCO Agentursoftware — API v1 (OpenAPI), Webhooks, n8n-Integration, MOCO MCP Server |
+| `sw-aiseo` | KI-SEO für deutschsprachige Inhalte — Zitierung in ChatGPT, Perplexity, AI Overviews, inkl. Schema-Vorlagen und robots.txt für KI-Bots |
 
 ## Empfohlene weitere Marketplaces
 

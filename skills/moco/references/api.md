@@ -2,12 +2,17 @@
 
 Base URL: `https://{domain}.mocoapp.com/api/v1/`
 
+Maßgebliche Quelle: OpenAPI-Spec `https://docs.mocoapp.com/api/docs/v1.yaml` (Stand dieser Referenz: 2026-10). Bei Zweifeln dort prüfen.
+
+**Teil-Updates:** Fast alle Ressourcen mit `PUT /{resource}/{id}` akzeptieren auch `PATCH` mit denselben Feldern.
+
 ---
 
 ## Profile
 | Method | Endpoint | Beschreibung |
 |--------|----------|-------------|
 | GET | `/profile` | Aktueller Benutzer (oder impersonierter User) |
+| GET | `/profile/performance_report` | Soll-Ist des aktuellen Users (param: year) |
 
 ---
 
@@ -240,6 +245,21 @@ Offer Customer Approval:
 | GET | `/offers/{id}/customer_approval` | Status (404 wenn nicht aktiviert) |
 | POST | `/offers/{id}/customer_approval/activate` | Aktivieren |
 | POST | `/offers/{id}/customer_approval/deactivate` | Deaktivieren |
+| GET | `/offers/{offer_id}/attachments` | Anhänge auflisten |
+| POST | `/offers/{offer_id}/attachments` | Anhang hinzufügen (required: attachment) |
+| DELETE | `/offers/{offer_id}/attachments/{id}` | Anhang löschen |
+
+---
+
+## Offer Confirmations (Auftragsbestätigungen)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/offer_confirmations` | Liste (Filter: offer_id) |
+| GET | `/offer_confirmations/{id}` | Einzeln |
+| GET | `/offer_confirmations/{id}.pdf` | PDF (optional: letter_paper_id) |
+| POST | `/offer_confirmations` | Erstellen (required: offer_id; optional: title, date, salutation_raw, footer_raw) |
+| PUT/PATCH | `/offer_confirmations/{id}` | Aktualisieren |
+| DELETE | `/offer_confirmations/{id}` | Löschen |
 
 ---
 
@@ -295,7 +315,43 @@ Payment Methods: bank_transfer, direct_debit, credit_card, paypal, cash, bank_tr
 ## Purchase Budgets
 | Method | Endpoint | Beschreibung |
 |--------|----------|-------------|
-| GET | `/purchases/budgets` | Liste (required: year) — read-only |
+| GET | `/purchases/budgets` | Liste (required: year) |
+| POST | `/purchases/budgets` | Erstellen |
+| PUT/PATCH | `/purchases/budgets/{id}` | Aktualisieren |
+| PUT | `/purchases/budgets/{id}/target` | Budgetziel für ein Jahr setzen |
+| DELETE | `/purchases/budgets/{id}` | Löschen |
+
+---
+
+## Planned Purchases (Geplante Ausgaben)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/planned_purchases` | Liste |
+| GET | `/planned_purchases/{id}` | Einzeln |
+| POST | `/planned_purchases` | Erstellen (required: date, title, net_total, currency, user_id; optional: finish_date, frequency, company_id, purchase_budget_id) |
+| PUT/PATCH | `/planned_purchases/{id}` | Aktualisieren |
+| DELETE | `/planned_purchases/{id}` | Löschen |
+
+---
+
+## Approvals (Freigaben)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/approvals` | Liste (Filter: type, approver_user_id, creator_user_id, approval_status) |
+| GET | `/approvals/{id}` | Einzeln |
+| POST | `/approvals` | Anlegen (required: target_type, target_id, approver_id; optional: approver2_id, note) |
+| POST | `/approvals/{id}/approve` | Freigeben |
+| POST | `/approvals/{id}/deny` | Ablehnen (optional: note) |
+| DELETE | `/approvals/{id}` | Löschen |
+
+---
+
+## Revenue Categories (Erlöskategorien)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/revenue_categories` | Liste (Filter: term, revenue_account, cost_category) |
+| POST | `/revenue_categories` | Erstellen (name, revenue_account, cost_category, assignment_kind) |
+| GET/PUT/PATCH/DELETE | `/revenue_categories/{id}` | Einzeln / Aktualisieren / Löschen |
 
 ---
 
@@ -461,6 +517,33 @@ Contexts: Company, Contact, Project, Deal, Purchase, Invoice, Offer, User.
 |--------|----------|-------------|
 | GET | `/vat_code_sales` | Verkaufs-Steuercodes (Filter: reverse_charge, intra_eu, active) |
 | GET | `/vat_code_purchases` | Einkaufs-Steuercodes |
+
+---
+
+## Absence Requests (Abwesenheitsanträge)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/users/absence_requests` | Liste (Filter: user_id, selected_approver_id, type, status) |
+| GET | `/users/absence_requests/{id}` | Einzeln |
+| POST | `/users/absence_requests` | Erstellen (required: approver_user_id, type, entries) |
+| DELETE | `/users/absence_requests/{id}` | Zurückziehen (optional: comment) |
+
+---
+
+## Todos
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/todos` | Liste (Filter: responsible_user_id, assigned_to_user_id, created_by_user_id, completed, term) |
+| GET | `/todos/{id}` | Einzeln |
+
+Anlegen von Todos ist über die REST API nicht dokumentiert — der MOCO MCP Server bietet `create_todo`.
+
+---
+
+## Letter Papers (Briefpapiere)
+| Method | Endpoint | Beschreibung |
+|--------|----------|-------------|
+| GET | `/letter_papers` | Liste — IDs für `letter_paper_id` bei PDF-Downloads |
 
 ---
 

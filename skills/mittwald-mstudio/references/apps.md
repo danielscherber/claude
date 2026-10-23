@@ -9,9 +9,9 @@ mw app list
 GET /v2/apps
 ```
 
-Common apps: `wordpress`, `joomla`, `drupal`, `typo3`, `matomo`, `nextcloud`, `shopware6`
+Marketplace apps (as of 2026-10): WordPress, TYPO3, Contao, Drupal Core, Drupal CMS, Joomla!, Matomo, Nextcloud, Shopware 6, Roundcube Webmail — plus generic runtimes **Node.js**, **Python**, **PHP**, **PHP-Worker** and **Static Files** for custom apps.
 
-Note: **n8n** is NOT a marketplace app — deploy it as a Docker container (see containers.md).
+Note: **n8n**, **Directus** and many other tools are NOT marketplace apps — they are available as **container templates** (`GET /v2/container-templates`, see containers.md).
 
 ## Installing an App
 
@@ -50,8 +50,8 @@ GET /v2/apps/{appId}/versions             # list available versions → get vers
 ### Finding available software and versions
 
 ```
-GET /v2/systemsoftwares
-GET /v2/systemsoftwares/{softwareId}/versions
+GET /v2/system-softwares
+GET /v2/system-softwares/{softwareId}/versions
 ```
 
 ### Changing PHP version for a WordPress install
@@ -59,13 +59,13 @@ GET /v2/systemsoftwares/{softwareId}/versions
 1. Find PHP software ID:
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://api.mittwald.de/v2/systemsoftwares" | jq '.[] | select(.name=="php")'
+  "https://api.mittwald.de/v2/system-softwares" | jq '.[] | select(.name=="php")'
 ```
 
 2. Find target version ID:
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
-  "https://api.mittwald.de/v2/systemsoftwares/<phpId>/versions" | jq '.[] | select(.externalVersion | startswith("8.3"))'
+  "https://api.mittwald.de/v2/system-softwares/<phpId>/versions" | jq '.[] | select(.externalVersion | startswith("8.3"))'
 ```
 
 3. Apply:

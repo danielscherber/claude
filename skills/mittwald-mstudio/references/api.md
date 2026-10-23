@@ -33,7 +33,7 @@ Roles: `api_read`, `api_write`
 ```
 GET    /v2/projects                          # list all projects
 GET    /v2/projects?customerId=<orgId>       # filter by org
-POST   /v2/projects                          # create project
+POST   /v2/servers/{serverId}/projects       # create project on a server
 GET    /v2/projects/{projectId}
 DELETE /v2/projects/{projectId}
 ```
@@ -82,7 +82,9 @@ DELETE /v2/redis-databases/{databaseId}
 GET    /v2/projects/{projectId}/domains
 POST   /v2/ingresses                         # connect domain to container/app
 GET    /v2/ingresses/{ingressId}
-PATCH  /v2/ingresses/{ingressId}
+PUT    /v2/ingresses/{ingressId}/paths       # replace paths/targets
+PUT    /v2/ingresses/{ingressId}/tls         # TLS settings
+POST   /v2/ingresses/{ingressId}/actions/request-acme-certificate-issuance
 DELETE /v2/ingresses/{ingressId}
 ```
 
@@ -90,17 +92,17 @@ DELETE /v2/ingresses/{ingressId}
 ```
 GET    /v2/projects/{projectId}/dns-zones
 GET    /v2/dns-zones/{zoneId}
-PATCH  /v2/dns-zones/{zoneId}/record-sets/{recordSet}
+PUT    /v2/dns-zones/{zoneId}/record-sets/{recordSet}   # recordSet: a, mx, txt, srv, cname
 ```
 
 ### System Software (PHP versions etc.)
 ```
-GET    /v2/systemsoftwares                   # list available software
-GET    /v2/systemsoftwares/{id}/versions     # list versions for a software
+GET    /v2/system-softwares                   # list available software
+GET    /v2/system-softwares/{id}/versions     # list versions for a software
 ```
 To change PHP version for a WordPress install:
-1. `GET /v2/systemsoftwares` — find PHP entry, note its ID
-2. `GET /v2/systemsoftwares/{phpId}/versions` — find desired version ID
+1. `GET /v2/system-softwares` — find PHP entry, note its ID
+2. `GET /v2/system-softwares/{phpId}/versions` — find desired version ID
 3. `PATCH /v2/appinstallations/{installationId}` with systemSoftware map
 
 ## Pagination
