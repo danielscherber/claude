@@ -1,0 +1,63 @@
+{
+  "name": "code-warden",
+  "version": "4.0.0",
+  "description": "Verifiable governance for AI-assisted development — checks, hooks, and evidence.",
+  "main": "SKILL.md",
+  "bin": {
+    "code-warden": "bin/code-warden.js"
+  },
+  "files": [
+    "bin/",
+    "tools/",
+    "references/",
+    "templates/",
+    "examples/",
+    "SKILL.md",
+    "CONFIGURE.md",
+    "DECISIONS.md",
+    "README.md",
+    "codewarden.json",
+    "install.js",
+    "install.ps1",
+    "install.sh"
+  ],
+  "scripts": {
+    "lint": "node tools/warden-lint.js .",
+    "check-secrets": "node tools/verify-secrets.js .",
+    "get-context": "node tools/get-context.js",
+    "report": "node tools/governance-report.js .",
+    "report:json": "node tools/governance-report.js . --format=json",
+    "report:md": "node tools/governance-report.js . --format=md",
+    "install-auto": "node install.js",
+    "install-dry-run": "node install.js --dry-run",
+    "install-list": "node install.js --list",
+    "install-doctor": "node install.js --doctor",
+    "smoke:npx": "node tools/smoke-npx.js",
+    "test": "node tools/tests/run-all-tests.js",
+    "ci": "npm run lint && npm run check-secrets && npm run test && node install.js --doctor"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "ai",
+    "governance",
+    "claude",
+    "codex",
+    "cursor",
+    "windsurf",
+    "code-review",
+    "linter",
+    "secrets",
+    "ci",
+    "hooks"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kodaxadev/Code-Warden.git"
+  },
+  "homepage": "https://github.com/Kodaxadev/Code-Warden",
+  "bugs": "https://github.com/Kodaxadev/Code-Warden/issues",
+  "author": "Justin Davis",
+  "license": "MIT"
+}

@@ -1,22 +1,17 @@
 {
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "claudedaniel",
+  "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, Code-Warden, and more.",
   "owner": {
-    "name": "Daniel Scherber"
-  },
-  "metadata": {
-    "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, and more.",
-    "version": "1.4.0"
+    "name": "Daniel Scherber",
+    "url": "https://github.com/danielscherber"
   },
   "plugins": [
     {
       "name": "claudedaniel",
-      "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, and more.",
+      "description": "Daniel's Claude Code skills — Mittwald mStudio, MOCO, KI-SEO, Code-Warden, and more.",
       "source": "./",
-      "skills": [
-        "./skills/mittwald-mstudio",
-        "./skills/moco",
-        "./skills/sw-aiseo"
-      ]
+      "category": "productivity"
     }
   ]
 }
